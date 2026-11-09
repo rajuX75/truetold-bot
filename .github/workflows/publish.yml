@@ -37,7 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Fetch full history so git push in run.mjs works correctly
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -50,23 +49,40 @@ jobs:
       - run: npm test
 
       - name: Generate, publish, share
-        # On a push trigger we still want to publish (daily cap in state/published.json
-        # prevents over-publishing). Set FORCE=false so the cap is respected.
         run: node src/run.mjs
         env:
           DRY_RUN:              ${{ inputs.dry_run  || 'false' }}
           PUBLISH_AS_DRAFT:     ${{ inputs.draft    || 'false' }}
           CONTACT_EMAIL:        ${{ vars.CONTACT_EMAIL }}
           IMAGE_BASE_URL:       ${{ vars.IMAGE_BASE_URL }}
+
+          # ── Provider 1 (primary): Gemini
           LLM_API_KEY:          ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL:         ${{ vars.LLM_BASE_URL }}
           LLM_MODEL:            ${{ vars.LLM_MODEL }}
           LLM_VISION_MODEL:     ${{ vars.LLM_VISION_MODEL }}
           LLM_CHECK_MODEL:      ${{ vars.LLM_CHECK_MODEL }}
+          LLM_PROVIDER_NAME:    ${{ vars.LLM_PROVIDER_NAME }}
+
+          # ── Provider 2 (fallback): e.g. Groq
+          LLM_API_KEY_2:        ${{ secrets.LLM_API_KEY_2 }}
+          LLM_BASE_URL_2:       ${{ vars.LLM_BASE_URL_2 }}
+          LLM_MODEL_2:          ${{ vars.LLM_MODEL_2 }}
+          LLM_PROVIDER_NAME_2:  ${{ vars.LLM_PROVIDER_NAME_2 }}
+
+          # ── Provider 3 (fallback): e.g. Cerebras
+          LLM_API_KEY_3:        ${{ secrets.LLM_API_KEY_3 }}
+          LLM_BASE_URL_3:       ${{ vars.LLM_BASE_URL_3 }}
+          LLM_MODEL_3:          ${{ vars.LLM_MODEL_3 }}
+          LLM_PROVIDER_NAME_3:  ${{ vars.LLM_PROVIDER_NAME_3 }}
+
+          # ── Blogger
           BLOGGER_BLOG_ID:      ${{ secrets.BLOGGER_BLOG_ID }}
           BLOGGER_CLIENT_ID:    ${{ secrets.BLOGGER_CLIENT_ID }}
           BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
           BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+
+          # ── X (Twitter)
           X_API_KEY:            ${{ secrets.X_API_KEY }}
           X_API_SECRET:         ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN:       ${{ secrets.X_ACCESS_TOKEN }}
