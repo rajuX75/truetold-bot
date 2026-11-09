@@ -1,5 +1,5 @@
 // Grounded writing + independent fact-check + image vetting with any OpenAI-compatible model.
-import { extractJson } from './util.mjs';
+import { extractJson, log } from './util.mjs';
 import { chat, MODELS } from './llm.mjs';
 
 async function ask({ system, content, max = 4000, temperature = 0.4, model = MODELS.text() }) {
@@ -22,7 +22,7 @@ STYLE GUIDE:
 - Prefer concrete nouns and active verbs over abstractions.
 - The tweetHook must be your most punchy one-liner from the story — a single arresting fact or irony.
 
-Return ONLY a valid JSON object (no markdown fences):
+Return ONLY a valid JSON object with NO markdown fences, NO commentary before or after:
 {
   "title": "<= 60 chars, compelling but honest, includes primary keyword",
   "description": "140-155 char meta description — factual and enticing, ends with a reason to click",
@@ -41,11 +41,27 @@ export async function writeStory({ article, candidate, categories, today, feedba
     `Event year (per feed): ${candidate.year}\nFeed blurb: ${candidate.blurb}\n\n` +
     `SOURCE TEXT (the only permitted source of facts):\n"""\n${article.text}\n"""` +
     (feedback ? `\n\nA fact-checker rejected the previous draft for these unsupported claims. Fix them by removing or correcting:\n${feedback}` : '');
-  const out = await ask({ system: WRITER_SYSTEM, content: prompt, max: 9000 });
-  const j = extractJson(out);
-  if (!j.title || !Array.isArray(j.sections) || j.sections.length < 2) throw new Error('Malformed story JSON');
-  if (!categories.includes(j.category)) j.category = categories[0];
-  return j;
+
+  // Try up to 2 times; some models occasionally return prose instead of JSON.
+  // On retry we lower temperature for a more literal/obedient response.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const out = await ask({ system: WRITER_SYSTEM, content: prompt, max: 9000, temperature: attempt === 0 ? 0.4 : 0.15 });
+    let j;
+    try {
+      j = extractJson(out);
+    } catch (e) {
+      log(`Writer non-JSON output (attempt ${attempt + 1}):`, out.slice(0, 200));
+      if (attempt === 0) continue;
+      throw new Error('Writer returned non-JSON output after 2 attempts');
+    }
+    if (!j.title || !Array.isArray(j.sections) || j.sections.length < 2) {
+      log(`Writer malformed JSON (attempt ${attempt + 1}): title=${j.title}, sections=${j.sections?.length}`);
+      if (attempt === 0) continue;
+      throw new Error('Malformed story JSON after 2 attempts');
+    }
+    if (!categories.includes(j.category)) j.category = categories[0];
+    return j;
+  }
 }
 
 const CHECK_SYSTEM = `You are a strict fact-checker. Compare the ARTICLE with the SOURCE TEXT.

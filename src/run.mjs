@@ -121,14 +121,18 @@ for (const cand of candidates) {
     if (!DRAFT) {
       try {
         const tweet = buildTweet({ hook: story.tweetHook, url: post.url, hashtags: cfg.xHashtags });
-        // Load the OG image (1200×630 JPEG) that was already committed to Pages
+        // Load the OG image (1200x630 JPEG) that was already committed to Pages
         let ogBuffer;
         try {
           const ogPath = img.files.find((f) => f.includes('-og-'));
           if (ogPath) ogBuffer = await fs.readFile(ogPath);
-        } catch { /* non-fatal – post without image if file missing */ }
+        } catch { /* non-fatal - post without image if file missing */ }
         const r = await postToX(tweet, { imageBuffer: ogBuffer });
-        log(r.skipped ? 'X: credentials not set, skipped' : `X: posted ${r.id}${ogBuffer ? ' (with image)' : ''}`);
+        if (r.skipped) {
+          log('X: skipped -', r.reason);
+        } else {
+          log(`X: posted tweet ${r.id}${r.withImage ? ' (with OG image)' : ' (text-only, image upload failed)'}`);
+        }
       } catch (e) { log('X post failed (non-fatal):', e.message); }
     }
     await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2));
