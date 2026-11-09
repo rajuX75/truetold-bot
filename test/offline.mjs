@@ -37,8 +37,10 @@ assert.ok(!html.includes('p1 <b>'), 'HTML escaped');
 for (const m of html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)) JSON.parse(m[1]);
 
 const t = buildTweet({ hook: 'x'.repeat(400), url: 'https://example.blogspot.com/2026/11/a.html', hashtags: ['#TrueStory', '#History'] });
+// Count tweet length the way X does: every URL = 23 chars
 const counted = t.replace(/https?:\/\/\S+/g, 'x'.repeat(23)).length;
 assert.ok(counted <= 280, `tweet too long: ${counted}`);
+assert.match(t, /→ Continue Reading/, 'tweet must include CTA');
 
 assert.equal(slugify('The Fall of Rome!'), 'the-fall-of-rome');
 assert.deepEqual(extractJson('```json\n{"a":1}\n```'), { a: 1 });
