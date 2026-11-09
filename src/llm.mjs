@@ -11,41 +11,44 @@
 
 import { sleep, log } from './util.mjs';
 
-// ── Provider definitions ────────────────────────────────────────────────────
+function cleanBase(url, fallback) {
+  const u = (url && String(url).trim()) ? String(url).trim() : fallback;
+  return u.replace(/\/$/, '');
+}
 
-function loadProviders() {
+export function loadProviders() {
   const providers = [];
 
-  // Provider 1 (primary) — always required
-  if (process.env.LLM_API_KEY) {
+  // Provider 1 (primary, usually Gemini)
+  if (process.env.LLM_API_KEY && process.env.LLM_API_KEY.trim()) {
     providers.push({
       name: process.env.LLM_PROVIDER_NAME || 'primary',
-      base: (process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai').replace(/\/$/, ''),
-      key: process.env.LLM_API_KEY,
+      base: cleanBase(process.env.LLM_BASE_URL, 'https://generativelanguage.googleapis.com/v1beta/openai'),
+      key: process.env.LLM_API_KEY.trim(),
       model: process.env.LLM_MODEL || 'gemini-2.5-flash',
       visionModel: process.env.LLM_VISION_MODEL || process.env.LLM_MODEL || 'gemini-2.5-flash',
       checkModel: process.env.LLM_CHECK_MODEL || process.env.LLM_MODEL || 'gemini-2.5-flash',
     });
   }
 
-  // Provider 2 (first fallback)
-  if (process.env.LLM_API_KEY_2) {
+  // Provider 2 (fallback 1, e.g. Groq)
+  if (process.env.LLM_API_KEY_2 && process.env.LLM_API_KEY_2.trim()) {
     providers.push({
-      name: process.env.LLM_PROVIDER_NAME_2 || 'fallback-1',
-      base: (process.env.LLM_BASE_URL_2 || 'https://api.groq.com/openai/v1').replace(/\/$/, ''),
-      key: process.env.LLM_API_KEY_2,
+      name: process.env.LLM_PROVIDER_NAME_2 || 'groq',
+      base: cleanBase(process.env.LLM_BASE_URL_2, 'https://api.groq.com/openai/v1'),
+      key: process.env.LLM_API_KEY_2.trim(),
       model: process.env.LLM_MODEL_2 || 'llama-3.3-70b-versatile',
-      visionModel: process.env.LLM_VISION_MODEL_2 || process.env.LLM_MODEL_2 || 'llama-3.3-70b-versatile',
+      visionModel: process.env.LLM_VISION_MODEL_2 || 'llama-3.2-11b-vision-preview',
       checkModel: process.env.LLM_CHECK_MODEL_2 || process.env.LLM_MODEL_2 || 'llama-3.3-70b-versatile',
     });
   }
 
-  // Provider 3 (second fallback)
-  if (process.env.LLM_API_KEY_3) {
+  // Provider 3 (fallback 2, e.g. Cerebras)
+  if (process.env.LLM_API_KEY_3 && process.env.LLM_API_KEY_3.trim()) {
     providers.push({
-      name: process.env.LLM_PROVIDER_NAME_3 || 'fallback-2',
-      base: (process.env.LLM_BASE_URL_3 || 'https://api.cerebras.ai/v1').replace(/\/$/, ''),
-      key: process.env.LLM_API_KEY_3,
+      name: process.env.LLM_PROVIDER_NAME_3 || 'cerebras',
+      base: cleanBase(process.env.LLM_BASE_URL_3, 'https://api.cerebras.ai/v1'),
+      key: process.env.LLM_API_KEY_3.trim(),
       model: process.env.LLM_MODEL_3 || 'llama-3.3-70b',
       visionModel: process.env.LLM_VISION_MODEL_3 || process.env.LLM_MODEL_3 || 'llama-3.3-70b',
       checkModel: process.env.LLM_CHECK_MODEL_3 || process.env.LLM_MODEL_3 || 'llama-3.3-70b',
@@ -55,18 +58,14 @@ function loadProviders() {
   return providers;
 }
 
-let _providers;
-function getProviders() {
-  if (!_providers) _providers = loadProviders();
-  return _providers;
+export function getProviders() {
+  return loadProviders();
 }
 
 // ── Model resolution ────────────────────────────────────────────────────────
 
-// These resolve to the primary provider's model by default.
-// When the chat() function falls back to another provider, it swaps the model.
 export const MODELS = {
-  text:   () => getProviders()[0]?.model   || 'gemini-2.5-flash',
+  text:   () => getProviders()[0]?.model       || 'gemini-2.5-flash',
   vision: () => getProviders()[0]?.visionModel || 'gemini-2.5-flash',
   check:  () => getProviders()[0]?.checkModel  || 'gemini-2.5-flash',
 };
@@ -83,17 +82,14 @@ async function throttle() {
 
 // ── Resolve the correct model for a provider ────────────────────────────────
 
-function resolveModel(requestedModel, provider) {
-  // If the caller asked for the primary provider's model but we're on a fallback,
-  // swap to the fallback's equivalent model.
-  const primary = getProviders()[0];
+function resolveModel(requestedModel, provider, providers) {
+  const primary = providers[0];
   if (!primary) return requestedModel;
 
   if (requestedModel === primary.model)       return provider.model;
-  if (requestedModel === primary.visionModel)  return provider.visionModel;
-  if (requestedModel === primary.checkModel)   return provider.checkModel;
-  // Explicit model not matching primary — keep as-is (may fail, that's fine)
-  return requestedModel;
+  if (requestedModel === primary.visionModel) return provider.visionModel;
+  if (requestedModel === primary.checkModel)  return provider.checkModel;
+  return provider.model || requestedModel;
 }
 
 // ── Core chat function with multi-provider failover ─────────────────────────
@@ -106,7 +102,7 @@ export async function chat({ model, system, user, max = 4000, temperature = 0.4,
 
   for (let pi = 0; pi < providers.length; pi++) {
     const provider = providers[pi];
-    const providerModel = resolveModel(model, provider);
+    const providerModel = resolveModel(model, provider, providers);
     let useJsonMode = json;
     let providerFailed = false;
 
@@ -139,7 +135,7 @@ export async function chat({ model, system, user, max = 4000, temperature = 0.4,
         const j = await res.json();
         const text = j.choices?.[0]?.message?.content;
         if (!text) { lastErr = new Error('Empty model response'); continue; }
-        if (pi > 0) log(`[${provider.name}] Responded successfully (fallback)`);
+        if (pi > 0) log(`[${provider.name}] Responded successfully (fallback from previous provider)`);
         return text;
       }
 
@@ -153,32 +149,32 @@ export async function chat({ model, system, user, max = 4000, temperature = 0.4,
         continue;
       }
 
-      // Rate limited or server error — try next provider
+      // Rate limited (429) or server error (5xx) — fail over to next provider immediately if available
       if (res.status === 429 || res.status >= 500) {
-        log(`[${provider.name}] ${res.status} — ${pi < providers.length - 1 ? 'failing over to next provider' : 'last provider, retrying'}`);
         if (pi < providers.length - 1) {
+          log(`[${provider.name}] HTTP ${res.status} (rate limited / server busy) -> failing over to ${providers[pi + 1].name}`);
           providerFailed = true;
-          break; // move to next provider
+          break; // break retry loop, move to next provider
         }
-        // Last provider: retry with backoff
+        // Last provider: wait and retry
         const ra = Number(res.headers.get('retry-after'));
         const wait = ra > 0 ? ra * 1000 : 15000 * (attempt + 1);
-        log(`[${provider.name}] Waiting ${Math.round(wait / 1000)}s before retry`);
+        log(`[${provider.name}] HTTP ${res.status} (last provider); waiting ${Math.round(wait / 1000)}s before retry ${attempt + 1}/3`);
         await sleep(wait);
         continue;
       }
 
-      // 401/403/404 — config problem on this provider, skip to next
+      // 401/403/404 — auth or configuration error on this provider, fail over to next provider
       if (res.status === 401 || res.status === 403 || res.status === 404) {
-        log(`[${provider.name}] Auth/config error (${res.status}), skipping to next provider`);
+        log(`[${provider.name}] Auth/config error (${res.status}), failing over to next provider`);
         providerFailed = true;
         break;
       }
 
-      throw lastErr; // Unknown error — don't retry
+      throw lastErr;
     }
 
-    if (!providerFailed) break; // exhausted retries on the last provider
+    if (!providerFailed) break;
   }
 
   throw lastErr;

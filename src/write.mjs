@@ -89,17 +89,33 @@ export async function factCheck({ article, story }) {
 }
 
 // Vision check: does the picture plausibly relate to the story? Also writes accessible alt text + caption.
+// If the provider doesn't support image inputs (e.g. text-only models), it gracefully falls back to metadata evaluation.
 export async function vetImage({ title, summary, fileTitle, fileDescription, jpegBuffer }) {
-  const out = await ask({
-    system:
-      'You review a candidate hero image for a factual article. Describe ONLY what is visibly in the image; never assert identities, places or dates that you cannot see unless the provided file description states them. Return ONLY JSON: {"ok": boolean, "alt": "concise descriptive alt text, 80-125 chars, no \\"image of\\"", "caption": "one factual sentence <= 140 chars based on the file description", "reason": "short"}. ok=false if the image is a logo, map, text-heavy graphic, unrelated, low quality, or graphic gore.',
-    model: MODELS.vision(),
-    content: [
-      { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${jpegBuffer.toString('base64')}` } },
-      { type: 'text', text: `Article title: ${title}\nArticle summary: ${summary}\nFile name: ${fileTitle}\nFile description (from Wikimedia Commons): ${fileDescription || 'n/a'}` },
-    ],
-    max: 3000,
-    temperature: 0,
-  });
-  return extractJson(out);
+  const systemPrompt =
+    'You review a candidate hero image for a factual article. Describe ONLY what is visibly in the image; never assert identities, places or dates that you cannot see unless the provided file description states them. Return ONLY JSON: {"ok": boolean, "alt": "concise descriptive alt text, 80-125 chars, no \\"image of\\"", "caption": "one factual sentence <= 140 chars based on the file description", "reason": "short"}. ok=false if the image is a logo, map, text-heavy graphic, unrelated, low quality, or graphic gore.';
+  const textPrompt = `Article title: ${title}\nArticle summary: ${summary}\nFile name: ${fileTitle}\nFile description (from Wikimedia Commons): ${fileDescription || 'n/a'}`;
+
+  try {
+    const out = await ask({
+      system: systemPrompt,
+      model: MODELS.vision(),
+      content: [
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${jpegBuffer.toString('base64')}` } },
+        { type: 'text', text: textPrompt },
+      ],
+      max: 3000,
+      temperature: 0,
+    });
+    return extractJson(out);
+  } catch (err) {
+    log(`Vision API unavailable or failed (${err.message.slice(0, 100)}), falling back to metadata vetting`);
+    const out = await ask({
+      system: systemPrompt,
+      model: MODELS.text(),
+      content: `${textPrompt}\n(Note: Image preview is not viewable by your endpoint. Review the file name and description to determine if it is a relevant photographic or historical hero image).`,
+      max: 3000,
+      temperature: 0,
+    });
+    return extractJson(out);
+  }
 }

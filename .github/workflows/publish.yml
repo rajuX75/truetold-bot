@@ -53,28 +53,32 @@ jobs:
         env:
           DRY_RUN:              ${{ inputs.dry_run  || 'false' }}
           PUBLISH_AS_DRAFT:     ${{ inputs.draft    || 'false' }}
-          CONTACT_EMAIL:        ${{ vars.CONTACT_EMAIL }}
-          IMAGE_BASE_URL:       ${{ vars.IMAGE_BASE_URL }}
+          CONTACT_EMAIL:        ${{ secrets.CONTACT_EMAIL || vars.CONTACT_EMAIL }}
+          IMAGE_BASE_URL:       ${{ secrets.IMAGE_BASE_URL || vars.IMAGE_BASE_URL }}
 
           # ── Provider 1 (primary): Gemini
           LLM_API_KEY:          ${{ secrets.LLM_API_KEY }}
-          LLM_BASE_URL:         ${{ vars.LLM_BASE_URL }}
-          LLM_MODEL:            ${{ vars.LLM_MODEL }}
-          LLM_VISION_MODEL:     ${{ vars.LLM_VISION_MODEL }}
-          LLM_CHECK_MODEL:      ${{ vars.LLM_CHECK_MODEL }}
-          LLM_PROVIDER_NAME:    ${{ vars.LLM_PROVIDER_NAME }}
+          LLM_BASE_URL:         ${{ secrets.LLM_BASE_URL || vars.LLM_BASE_URL }}
+          LLM_MODEL:            ${{ secrets.LLM_MODEL || vars.LLM_MODEL }}
+          LLM_VISION_MODEL:     ${{ secrets.LLM_VISION_MODEL || vars.LLM_VISION_MODEL }}
+          LLM_CHECK_MODEL:      ${{ secrets.LLM_CHECK_MODEL || vars.LLM_CHECK_MODEL }}
+          LLM_PROVIDER_NAME:    ${{ secrets.LLM_PROVIDER_NAME || vars.LLM_PROVIDER_NAME }}
 
           # ── Provider 2 (fallback): e.g. Groq
           LLM_API_KEY_2:        ${{ secrets.LLM_API_KEY_2 }}
-          LLM_BASE_URL_2:       ${{ vars.LLM_BASE_URL_2 }}
-          LLM_MODEL_2:          ${{ vars.LLM_MODEL_2 }}
-          LLM_PROVIDER_NAME_2:  ${{ vars.LLM_PROVIDER_NAME_2 }}
+          LLM_BASE_URL_2:       ${{ secrets.LLM_BASE_URL_2 || vars.LLM_BASE_URL_2 }}
+          LLM_MODEL_2:          ${{ secrets.LLM_MODEL_2 || vars.LLM_MODEL_2 }}
+          LLM_VISION_MODEL_2:   ${{ secrets.LLM_VISION_MODEL_2 || vars.LLM_VISION_MODEL_2 }}
+          LLM_CHECK_MODEL_2:    ${{ secrets.LLM_CHECK_MODEL_2 || vars.LLM_CHECK_MODEL_2 }}
+          LLM_PROVIDER_NAME_2:  ${{ secrets.LLM_PROVIDER_NAME_2 || vars.LLM_PROVIDER_NAME_2 }}
 
           # ── Provider 3 (fallback): e.g. Cerebras
           LLM_API_KEY_3:        ${{ secrets.LLM_API_KEY_3 }}
-          LLM_BASE_URL_3:       ${{ vars.LLM_BASE_URL_3 }}
-          LLM_MODEL_3:          ${{ vars.LLM_MODEL_3 }}
-          LLM_PROVIDER_NAME_3:  ${{ vars.LLM_PROVIDER_NAME_3 }}
+          LLM_BASE_URL_3:       ${{ secrets.LLM_BASE_URL_3 || vars.LLM_BASE_URL_3 }}
+          LLM_MODEL_3:          ${{ secrets.LLM_MODEL_3 || vars.LLM_MODEL_3 }}
+          LLM_VISION_MODEL_3:   ${{ secrets.LLM_VISION_MODEL_3 || vars.LLM_VISION_MODEL_3 }}
+          LLM_CHECK_MODEL_3:    ${{ secrets.LLM_CHECK_MODEL_3 || vars.LLM_CHECK_MODEL_3 }}
+          LLM_PROVIDER_NAME_3:  ${{ secrets.LLM_PROVIDER_NAME_3 || vars.LLM_PROVIDER_NAME_3 }}
 
           # ── Blogger
           BLOGGER_BLOG_ID:      ${{ secrets.BLOGGER_BLOG_ID }}
