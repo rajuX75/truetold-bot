@@ -3,11 +3,27 @@
   "tagline": "Real stories. Told as they happened.",
   "storiesPerDay": 4,
   "storiesPerRun": 1,
-  "model": "claude-sonnet-5-5",
-  "categories": ["History", "Survival", "Science & Discovery", "Crime & Justice", "Exploration", "Disasters", "Culture", "Politics & Power"],
-  "xHashtags": ["#TrueStory", "#History"],
+  "categories": [
+    "History",
+    "Survival",
+    "Science & Discovery",
+    "Crime & Justice",
+    "Exploration",
+    "Disasters",
+    "Culture",
+    "Politics & Power"
+  ],
+  "xHashtags": [
+    "#TrueStory",
+    "#History"
+  ],
   "image": {
-    "widths": [480, 800, 1200, 1600],
+    "widths": [
+      480,
+      800,
+      1200,
+      1600
+    ],
     "minSourceWidth": 1200,
     "sizes": "(min-width: 1100px) 740px, 100vw"
   }

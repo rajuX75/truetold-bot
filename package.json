@@ -8,11 +8,10 @@
   },
   "scripts": {
     "start": "node src/run.mjs",
-    "test": "node test/offline.mjs",
+    "test": "node test/offline.mjs && node test/llm.mjs",
     "blogger-token": "node scripts/get-blogger-token.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.6.0",
     "sharp": "^0.35.5",
     "twitter-api-v2": "^1.31.0"
   }

@@ -41,8 +41,11 @@ jobs:
           PUBLISH_AS_DRAFT: ${{ inputs.draft || 'false' }}
           CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
           IMAGE_BASE_URL: ${{ vars.IMAGE_BASE_URL }}
-          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_VISION_MODEL: ${{ vars.LLM_VISION_MODEL }}
+          LLM_CHECK_MODEL: ${{ vars.LLM_CHECK_MODEL }}
           BLOGGER_BLOG_ID: ${{ secrets.BLOGGER_BLOG_ID }}
           BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
           BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
