@@ -1,9 +1,16 @@
 name: Publish true stories
 
 on:
+  # ── Automatic schedule: 4 runs/day (UTC). Dhaka = UTC+6.
+  # Fires at 02:15, 08:15, 14:15, 20:15 UTC  →  08:15, 14:15, 20:15, 02:15 Dhaka
   schedule:
-    # 4 runs/day x 1 story = 4 stories/day. Times are UTC (Dhaka = UTC+6).
     - cron: '15 2,8,14,20 * * *'
+
+  # ── Also fire on every push to main so the cron stays registered with GitHub
+  push:
+    branches: [main]
+
+  # ── Manual trigger with optional flags
   workflow_dispatch:
     inputs:
       dry_run:
@@ -16,8 +23,9 @@ on:
         default: false
 
 permissions:
-  contents: write   # commit images + state
+  contents: write   # commit processed images + state/published.json
 
+# Never run two publisher jobs at the same time (avoids duplicate posts)
 concurrency:
   group: truetold-publisher
   cancel-in-progress: false
@@ -28,29 +36,38 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Fetch full history so git push in run.mjs works correctly
+          fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - run: npm ci
+
       - run: npm test
+
       - name: Generate, publish, share
+        # On a push trigger we still want to publish (daily cap in state/published.json
+        # prevents over-publishing). Set FORCE=false so the cap is respected.
         run: node src/run.mjs
         env:
-          DRY_RUN: ${{ inputs.dry_run || 'false' }}
-          PUBLISH_AS_DRAFT: ${{ inputs.draft || 'false' }}
-          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
-          IMAGE_BASE_URL: ${{ vars.IMAGE_BASE_URL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
-          LLM_MODEL: ${{ vars.LLM_MODEL }}
-          LLM_VISION_MODEL: ${{ vars.LLM_VISION_MODEL }}
-          LLM_CHECK_MODEL: ${{ vars.LLM_CHECK_MODEL }}
-          BLOGGER_BLOG_ID: ${{ secrets.BLOGGER_BLOG_ID }}
-          BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+          DRY_RUN:              ${{ inputs.dry_run  || 'false' }}
+          PUBLISH_AS_DRAFT:     ${{ inputs.draft    || 'false' }}
+          CONTACT_EMAIL:        ${{ vars.CONTACT_EMAIL }}
+          IMAGE_BASE_URL:       ${{ vars.IMAGE_BASE_URL }}
+          LLM_API_KEY:          ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL:         ${{ vars.LLM_BASE_URL }}
+          LLM_MODEL:            ${{ vars.LLM_MODEL }}
+          LLM_VISION_MODEL:     ${{ vars.LLM_VISION_MODEL }}
+          LLM_CHECK_MODEL:      ${{ vars.LLM_CHECK_MODEL }}
+          BLOGGER_BLOG_ID:      ${{ secrets.BLOGGER_BLOG_ID }}
+          BLOGGER_CLIENT_ID:    ${{ secrets.BLOGGER_CLIENT_ID }}
           BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
           BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
-          X_API_KEY: ${{ secrets.X_API_KEY }}
-          X_API_SECRET: ${{ secrets.X_API_SECRET }}
-          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          X_API_KEY:            ${{ secrets.X_API_KEY }}
+          X_API_SECRET:         ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN:       ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET:      ${{ secrets.X_ACCESS_SECRET }}
