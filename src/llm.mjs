@@ -115,7 +115,7 @@ function resolveModel(requestedModel, provider, providers) {
 
 // ── Core chat function with multi-provider failover ─────────────────────────
 
-export async function chat({ model, system, user, max = 4000, temperature = 0.4, json = true }) {
+export async function chat({ model, system, user, max = 1800, temperature = 0.4, json = true }) {
   const providers = getProviders();
   if (!providers.length) throw new Error('No LLM providers configured — set LLM_API_KEY');
 
@@ -127,6 +127,12 @@ export async function chat({ model, system, user, max = 4000, temperature = 0.4,
     let useJsonMode = json;
     let providerFailed = false;
 
+    // Adjust max_tokens for provider limits (e.g. Groq free tier 1000 OTPM on 70b)
+    let effectiveMax = max;
+    if (provider.base.includes('groq.com') && providerModel.includes('70b') && effectiveMax > 950) {
+      effectiveMax = 950;
+    }
+
     for (let attempt = 0; attempt < 3; attempt++) {
       await throttle();
 
@@ -135,7 +141,7 @@ export async function chat({ model, system, user, max = 4000, temperature = 0.4,
         { role: 'user', content: user },
       ];
 
-      const body = { model: providerModel, messages, temperature, max_tokens: max };
+      const body = { model: providerModel, messages, temperature, max_tokens: effectiveMax };
       if (useJsonMode) body.response_format = { type: 'json_object' };
 
       let res;
@@ -162,6 +168,22 @@ export async function chat({ model, system, user, max = 4000, temperature = 0.4,
 
       const detail = (await res.text()).slice(0, 300);
       lastErr = new Error(`[${provider.name}] HTTP ${res.status}: ${detail}`);
+
+      // Handle Groq OTPM (Output Tokens Per Minute) limit dynamically
+      if (res.status === 429 && (detail.includes('OTPM') || detail.includes('reduce max_tokens') || detail.includes('Request too large'))) {
+        log(`[${provider.name}] Output token quota exceeded for ${providerModel}`);
+        if (provider.base.includes('groq.com') && providerModel !== 'llama-3.1-8b-instant') {
+          log(`[${provider.name}] Auto-switching to llama-3.1-8b-instant (higher TPM allowance)`);
+          providerModel = 'llama-3.1-8b-instant';
+          effectiveMax = Math.min(effectiveMax, 950);
+          continue;
+        }
+        if (effectiveMax > 600) {
+          effectiveMax = 600;
+          log(`[${provider.name}] Retrying with max_tokens=${effectiveMax}`);
+          continue;
+        }
+      }
 
       // Auto-heal 404 model_not_found: switch to known good models for this provider
       if (res.status === 404 && (detail.includes('model_not_found') || detail.includes('does not exist'))) {

@@ -2,7 +2,7 @@
 import { extractJson, log } from './util.mjs';
 import { chat, MODELS } from './llm.mjs';
 
-async function ask({ system, content, max = 4000, temperature = 0.4, model = MODELS.text() }) {
+async function ask({ system, content, max = 1800, temperature = 0.4, model = MODELS.text() }) {
   return chat({ model, system, user: content, max, temperature });
 }
 
@@ -39,7 +39,7 @@ Schema (return exactly this shape):
   "sections": [{"heading": "vivid H2 heading (not generic)", "paragraphs": ["paragraph text here"]}],
   "tweetHook": "<= 180 chars, one arresting factual statement or irony, no hashtags, no links, no emojis"
 }
-Length: 700-950 words across 3-5 sections. Each section must have at least 2 paragraphs.`;
+Length: 600-850 words across 3-4 sections. Each section must have at least 2 paragraphs.`;
 
 export async function writeStory({ article, candidate, categories, today, feedback }) {
   const prompt =
@@ -51,7 +51,7 @@ export async function writeStory({ article, candidate, categories, today, feedba
   // Try up to 2 times; some models occasionally return prose instead of JSON,
   // or produce JSON with syntax errors. Second attempt uses lower temperature.
   for (let attempt = 0; attempt < 2; attempt++) {
-    const out = await ask({ system: WRITER_SYSTEM, content: prompt, max: 9000, temperature: attempt === 0 ? 0.4 : 0.15 });
+    const out = await ask({ system: WRITER_SYSTEM, content: prompt, max: 1800, temperature: attempt === 0 ? 0.4 : 0.15 });
     let j;
     try {
       j = extractJson(out);
@@ -80,7 +80,7 @@ export async function factCheck({ article, story }) {
   const out = await ask({
     system: CHECK_SYSTEM,
     content: `SOURCE TEXT:\n"""\n${article.text}\n"""\n\nARTICLE:\n"""\n${story.title}\n${story.takeaways.join('\n')}\n${body}\n"""`,
-    max: 6000,
+    max: 600,
     temperature: 0,
     model: MODELS.check(),
   });
@@ -103,7 +103,7 @@ export async function vetImage({ title, summary, fileTitle, fileDescription, jpe
         { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${jpegBuffer.toString('base64')}` } },
         { type: 'text', text: textPrompt },
       ],
-      max: 3000,
+      max: 350,
       temperature: 0,
     });
     return extractJson(out);
@@ -113,7 +113,7 @@ export async function vetImage({ title, summary, fileTitle, fileDescription, jpe
       system: systemPrompt,
       model: MODELS.text(),
       content: `${textPrompt}\n(Note: Image preview is not viewable by your endpoint. Review the file name and description to determine if it is a relevant photographic or historical hero image).`,
-      max: 3000,
+      max: 350,
       temperature: 0,
     });
     return extractJson(out);
