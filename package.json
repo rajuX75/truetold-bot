@@ -1,0 +1,19 @@
+{
+  "name": "truetold-autopublisher",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/run.mjs",
+    "test": "node test/offline.mjs",
+    "blogger-token": "node scripts/get-blogger-token.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "sharp": "^0.35.5",
+    "twitter-api-v2": "^1.31.0"
+  }
+}

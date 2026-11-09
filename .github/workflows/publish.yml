@@ -1,0 +1,53 @@
+name: Publish true stories
+
+on:
+  schedule:
+    # 4 runs/day x 1 story = 4 stories/day. Times are UTC (Dhaka = UTC+6).
+    - cron: '15 2,8,14,20 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Generate only (no commit, no Blogger, no X)'
+        type: boolean
+        default: false
+      draft:
+        description: 'Publish to Blogger as DRAFT and skip X'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # commit images + state
+
+concurrency:
+  group: truetold-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Generate, publish, share
+        run: node src/run.mjs
+        env:
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          PUBLISH_AS_DRAFT: ${{ inputs.draft || 'false' }}
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+          IMAGE_BASE_URL: ${{ vars.IMAGE_BASE_URL }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BLOGGER_BLOG_ID: ${{ secrets.BLOGGER_BLOG_ID }}
+          BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
