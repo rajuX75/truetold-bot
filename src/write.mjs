@@ -22,7 +22,13 @@ STYLE GUIDE:
 - Prefer concrete nouns and active verbs over abstractions.
 - The tweetHook must be your most punchy one-liner from the story — a single arresting fact or irony.
 
-Return ONLY a valid JSON object with NO markdown fences, NO commentary before or after:
+JSON OUTPUT RULES (critical — a JSON parse error wastes an entire API call):
+- Return ONLY the raw JSON object. No markdown fences, no text before or after, no comments.
+- All string values must use properly escaped JSON. If a paragraph contains a double-quote character, escape it as \\".
+- Do NOT include literal newline characters inside string values — write everything on one line per string.
+- Do NOT add trailing commas after the last item in an array or object.
+
+Schema (return exactly this shape):
 {
   "title": "<= 60 chars, compelling but honest, includes primary keyword",
   "description": "140-155 char meta description — factual and enticing, ends with a reason to click",
@@ -30,7 +36,7 @@ Return ONLY a valid JSON object with NO markdown fences, NO commentary before or
   "category": "ONE of the allowed categories",
   "tags": ["up to 3 short topic tags"],
   "takeaways": ["3 punchy factual bullet points readers will remember"],
-  "sections": [{"heading": "vivid H2 heading (not generic)", "paragraphs": ["..."]}],
+  "sections": [{"heading": "vivid H2 heading (not generic)", "paragraphs": ["paragraph text here"]}],
   "tweetHook": "<= 180 chars, one arresting factual statement or irony, no hashtags, no links, no emojis"
 }
 Length: 700-950 words across 3-5 sections. Each section must have at least 2 paragraphs.`;
@@ -42,20 +48,20 @@ export async function writeStory({ article, candidate, categories, today, feedba
     `SOURCE TEXT (the only permitted source of facts):\n"""\n${article.text}\n"""` +
     (feedback ? `\n\nA fact-checker rejected the previous draft for these unsupported claims. Fix them by removing or correcting:\n${feedback}` : '');
 
-  // Try up to 2 times; some models occasionally return prose instead of JSON.
-  // On retry we lower temperature for a more literal/obedient response.
+  // Try up to 2 times; some models occasionally return prose instead of JSON,
+  // or produce JSON with syntax errors. Second attempt uses lower temperature.
   for (let attempt = 0; attempt < 2; attempt++) {
     const out = await ask({ system: WRITER_SYSTEM, content: prompt, max: 9000, temperature: attempt === 0 ? 0.4 : 0.15 });
     let j;
     try {
       j = extractJson(out);
     } catch (e) {
-      log(`Writer non-JSON output (attempt ${attempt + 1}):`, out.slice(0, 200));
+      log(`Writer JSON error (attempt ${attempt + 1}): ${e.message}`);
       if (attempt === 0) continue;
-      throw new Error('Writer returned non-JSON output after 2 attempts');
+      throw new Error(`Writer returned invalid JSON after 2 attempts: ${e.message}`);
     }
     if (!j.title || !Array.isArray(j.sections) || j.sections.length < 2) {
-      log(`Writer malformed JSON (attempt ${attempt + 1}): title=${j.title}, sections=${j.sections?.length}`);
+      log(`Writer malformed JSON (attempt ${attempt + 1}): title="${j.title}", sections=${j.sections?.length}`);
       if (attempt === 0) continue;
       throw new Error('Malformed story JSON after 2 attempts');
     }
