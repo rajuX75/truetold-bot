@@ -5,9 +5,6 @@
 // Provider 1 (primary):  LLM_BASE_URL   + LLM_API_KEY   + LLM_MODEL
 // Provider 2 (fallback): LLM_BASE_URL_2 + LLM_API_KEY_2 + LLM_MODEL_2
 // Provider 3 (fallback): LLM_BASE_URL_3 + LLM_API_KEY_3 + LLM_MODEL_3
-//
-// All providers use the OpenAI /chat/completions format (Gemini, Groq, Cerebras,
-// OpenRouter, GitHub Models, Mistral, NVIDIA NIM, etc.).
 
 import { sleep, log } from './util.mjs';
 
@@ -16,42 +13,66 @@ function cleanBase(url, fallback) {
   return u.replace(/\/$/, '');
 }
 
+function cleanModel(m, fallback) {
+  if (!m) return fallback;
+  const s = String(m).trim().replace(/^["']|["']$/g, '').trim();
+  return s || fallback;
+}
+
+// Automatically correct common model ID typos per provider
+function normalizeModel(model, base) {
+  const m = cleanModel(model, '');
+  if (base.includes('groq.com')) {
+    if (m === 'llama-3.3-70b') return 'llama-3.3-70b-versatile';
+    if (m === 'llama-3.1-8b') return 'llama-3.1-8b-instant';
+    if (!m) return 'llama-3.3-70b-versatile';
+  }
+  if (base.includes('cerebras.ai')) {
+    if (m === 'llama-3.3-70b-versatile') return 'llama-3.3-70b';
+    if (!m) return 'llama-3.3-70b';
+  }
+  return m;
+}
+
 export function loadProviders() {
   const providers = [];
 
   // Provider 1 (primary, usually Gemini)
   if (process.env.LLM_API_KEY && process.env.LLM_API_KEY.trim()) {
+    const base = cleanBase(process.env.LLM_BASE_URL, 'https://generativelanguage.googleapis.com/v1beta/openai');
     providers.push({
       name: process.env.LLM_PROVIDER_NAME || 'primary',
-      base: cleanBase(process.env.LLM_BASE_URL, 'https://generativelanguage.googleapis.com/v1beta/openai'),
+      base,
       key: process.env.LLM_API_KEY.trim(),
-      model: process.env.LLM_MODEL || 'gemini-2.5-flash',
-      visionModel: process.env.LLM_VISION_MODEL || process.env.LLM_MODEL || 'gemini-2.5-flash',
-      checkModel: process.env.LLM_CHECK_MODEL || process.env.LLM_MODEL || 'gemini-2.5-flash',
+      model: normalizeModel(process.env.LLM_MODEL || 'gemini-2.5-flash', base),
+      visionModel: normalizeModel(process.env.LLM_VISION_MODEL || process.env.LLM_MODEL || 'gemini-2.5-flash', base),
+      checkModel: normalizeModel(process.env.LLM_CHECK_MODEL || process.env.LLM_MODEL || 'gemini-2.5-flash', base),
     });
   }
 
   // Provider 2 (fallback 1, e.g. Groq)
   if (process.env.LLM_API_KEY_2 && process.env.LLM_API_KEY_2.trim()) {
+    const base = cleanBase(process.env.LLM_BASE_URL_2, 'https://api.groq.com/openai/v1');
     providers.push({
       name: process.env.LLM_PROVIDER_NAME_2 || 'groq',
-      base: cleanBase(process.env.LLM_BASE_URL_2, 'https://api.groq.com/openai/v1'),
+      base,
       key: process.env.LLM_API_KEY_2.trim(),
-      model: process.env.LLM_MODEL_2 || 'llama-3.3-70b-versatile',
-      visionModel: process.env.LLM_VISION_MODEL_2 || 'llama-3.2-11b-vision-preview',
-      checkModel: process.env.LLM_CHECK_MODEL_2 || process.env.LLM_MODEL_2 || 'llama-3.3-70b-versatile',
+      model: normalizeModel(process.env.LLM_MODEL_2 || 'llama-3.3-70b-versatile', base),
+      visionModel: normalizeModel(process.env.LLM_VISION_MODEL_2 || 'llama-3.2-11b-vision-preview', base),
+      checkModel: normalizeModel(process.env.LLM_CHECK_MODEL_2 || process.env.LLM_MODEL_2 || 'llama-3.3-70b-versatile', base),
     });
   }
 
   // Provider 3 (fallback 2, e.g. Cerebras)
   if (process.env.LLM_API_KEY_3 && process.env.LLM_API_KEY_3.trim()) {
+    const base = cleanBase(process.env.LLM_BASE_URL_3, 'https://api.cerebras.ai/v1');
     providers.push({
       name: process.env.LLM_PROVIDER_NAME_3 || 'cerebras',
-      base: cleanBase(process.env.LLM_BASE_URL_3, 'https://api.cerebras.ai/v1'),
+      base,
       key: process.env.LLM_API_KEY_3.trim(),
-      model: process.env.LLM_MODEL_3 || 'llama-3.3-70b',
-      visionModel: process.env.LLM_VISION_MODEL_3 || process.env.LLM_MODEL_3 || 'llama-3.3-70b',
-      checkModel: process.env.LLM_CHECK_MODEL_3 || process.env.LLM_MODEL_3 || 'llama-3.3-70b',
+      model: normalizeModel(process.env.LLM_MODEL_3 || 'llama-3.3-70b', base),
+      visionModel: normalizeModel(process.env.LLM_VISION_MODEL_3 || process.env.LLM_MODEL_3 || 'llama-3.3-70b', base),
+      checkModel: normalizeModel(process.env.LLM_CHECK_MODEL_3 || process.env.LLM_MODEL_3 || 'llama-3.3-70b', base),
     });
   }
 
@@ -84,7 +105,7 @@ async function throttle() {
 
 function resolveModel(requestedModel, provider, providers) {
   const primary = providers[0];
-  if (!primary) return requestedModel;
+  if (!primary) return provider.model || requestedModel;
 
   if (requestedModel === primary.model)       return provider.model;
   if (requestedModel === primary.visionModel) return provider.visionModel;
@@ -102,7 +123,7 @@ export async function chat({ model, system, user, max = 4000, temperature = 0.4,
 
   for (let pi = 0; pi < providers.length; pi++) {
     const provider = providers[pi];
-    const providerModel = resolveModel(model, provider, providers);
+    let providerModel = resolveModel(model, provider, providers);
     let useJsonMode = json;
     let providerFailed = false;
 
@@ -135,12 +156,41 @@ export async function chat({ model, system, user, max = 4000, temperature = 0.4,
         const j = await res.json();
         const text = j.choices?.[0]?.message?.content;
         if (!text) { lastErr = new Error('Empty model response'); continue; }
-        if (pi > 0) log(`[${provider.name}] Responded successfully (fallback from previous provider)`);
+        if (pi > 0) log(`[${provider.name}] Responded successfully (model: ${providerModel})`);
         return text;
       }
 
       const detail = (await res.text()).slice(0, 300);
       lastErr = new Error(`[${provider.name}] HTTP ${res.status}: ${detail}`);
+
+      // Auto-heal 404 model_not_found: switch to known good models for this provider
+      if (res.status === 404 && (detail.includes('model_not_found') || detail.includes('does not exist'))) {
+        if (provider.base.includes('groq.com')) {
+          const groqFallbacks = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+          const next = groqFallbacks.find((m) => m !== providerModel);
+          if (next) {
+            log(`[${provider.name}] Model "${providerModel}" 404 not found -> auto-switching to "${next}"`);
+            providerModel = next;
+            continue;
+          }
+        } else if (provider.base.includes('googleapis.com')) {
+          const geminiFallbacks = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+          const next = geminiFallbacks.find((m) => m !== providerModel);
+          if (next) {
+            log(`[${provider.name}] Model "${providerModel}" 404 not found -> auto-switching to "${next}"`);
+            providerModel = next;
+            continue;
+          }
+        } else if (provider.base.includes('cerebras.ai')) {
+          const cerebrasFallbacks = ['llama-3.3-70b', 'llama3.1-8b'];
+          const next = cerebrasFallbacks.find((m) => m !== providerModel);
+          if (next) {
+            log(`[${provider.name}] Model "${providerModel}" 404 not found -> auto-switching to "${next}"`);
+            providerModel = next;
+            continue;
+          }
+        }
+      }
 
       // JSON mode not supported by this provider — retry without it (same provider)
       if (res.status === 400 && useJsonMode) {
