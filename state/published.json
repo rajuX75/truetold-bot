@@ -23,11 +23,17 @@
       "title": "The Treaty of Sinchula: Bhutan's Himalayan Standoff",
       "url": "https://dramaxvault.blogspot.com/2026/11/the-treaty-of-sinchula-bhutans.html",
       "date": "2026-11-11"
+    },
+    {
+      "page": "Shrine_of_Remembrance",
+      "title": "Battle Behind the Shrine of Remembrance",
+      "url": "https://dramaxvault.blogspot.com/2026/11/battle-behind-shrine-of-remembrance.html",
+      "date": "2026-11-11"
     }
   ],
   "days": {
     "2026-11-09": 3,
-    "2026-11-11": 1
+    "2026-11-11": 2
   },
   "xQueue": [
     {
@@ -38,6 +44,14 @@
       "queuedAt": "2026-11-11T06:04:17.460Z",
       "attempts": 2,
       "lastError": "X 402: credits depleted"
+    },
+    {
+      "title": "Battle Behind the Shrine of Remembrance",
+      "url": "https://dramaxvault.blogspot.com/2026/11/battle-behind-shrine-of-remembrance.html",
+      "hook": "Over 300,000 people gathered in Melbourne on November 11, 1934, to open the Shrine of Remembrance—a memorial nearly derailed as a tomb of gloom.",
+      "ogFile": "docs/img/2026/11/shrine-of-remembrance-dedication-melbourne-og-1200x630.jpg",
+      "queuedAt": "2026-11-11T06:14:34.867Z",
+      "attempts": 0
     }
   ]
 }
