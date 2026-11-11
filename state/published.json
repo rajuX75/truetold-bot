@@ -29,11 +29,17 @@
       "title": "Battle Behind the Shrine of Remembrance",
       "url": "https://dramaxvault.blogspot.com/2026/11/battle-behind-shrine-of-remembrance.html",
       "date": "2026-11-11"
+    },
+    {
+      "page": "Battle_of_Khotyn_(1673)",
+      "title": "Lion of Khotyn: The Frosty Siege of the Dniester",
+      "url": "https://dramaxvault.blogspot.com/2026/11/lion-of-khotyn-frosty-siege-of-dniester.html",
+      "date": "2026-11-11"
     }
   ],
   "days": {
     "2026-11-09": 3,
-    "2026-11-11": 2
+    "2026-11-11": 3
   },
   "xQueue": [
     {
@@ -51,6 +57,14 @@
       "hook": "Over 300,000 people gathered in Melbourne on November 11, 1934, to open the Shrine of Remembrance—a memorial nearly derailed as a tomb of gloom.",
       "ogFile": "docs/img/2026/11/shrine-of-remembrance-dedication-melbourne-og-1200x630.jpg",
       "queuedAt": "2026-11-11T06:14:34.867Z",
+      "attempts": 0
+    },
+    {
+      "title": "Lion of Khotyn: The Frosty Siege of the Dniester",
+      "url": "https://dramaxvault.blogspot.com/2026/11/lion-of-khotyn-frosty-siege-of-dniester.html",
+      "hook": "Jan Sobieski forced his enemies to stay awake all night in freezing winds before leading a dawn charge that shattered an army of 35,000 at the Battle of Khotyn.",
+      "ogFile": "docs/img/2026/11/battle-of-khotyn-sobeski-victory-og-1200x630.jpg",
+      "queuedAt": "2026-11-11T09:23:59.218Z",
       "attempts": 0
     }
   ]
