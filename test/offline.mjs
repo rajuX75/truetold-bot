@@ -36,11 +36,17 @@ assert.match(html, /fetchpriority="high"/);
 assert.ok(!html.includes('p1 <b>'), 'HTML escaped');
 for (const m of html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)) JSON.parse(m[1]);
 
-const t = buildTweet({ hook: 'x'.repeat(400), url: 'https://example.blogspot.com/2026/11/a.html', hashtags: ['#TrueStory', '#History'] });
+delete process.env.X_LINK_MODE;
+const t = buildTweet({ hook: 'x'.repeat(400), url: 'https://example.blogspot.com/2026/11/a.html', hashtags: ['#TrueStory', '#History'], linkMode: 'inline' });
 // Count tweet length the way X does: every URL = 23 chars
 const counted = t.replace(/https?:\/\/\S+/g, 'x'.repeat(23)).length;
 assert.ok(counted <= 280, `tweet too long: ${counted}`);
-assert.match(t, /→ Continue Reading/, 'tweet must include CTA');
+assert.match(t, /→ Continue Reading/, 'inline tweet must include CTA');
+
+const tNone = buildTweet({ hook: 'x'.repeat(400), url: 'https://example.blogspot.com/2026/11/a.html', hashtags: ['#TrueStory', '#History'], linkMode: 'none' });
+assert.ok(tNone.length <= 280, `none tweet too long: ${tNone.length}`);
+assert.ok(!tNone.includes('→ Continue Reading'), 'none mode must omit CTA');
+assert.ok(!tNone.includes('https://'), 'none mode must omit link');
 
 assert.equal(slugify('The Fall of Rome!'), 'the-fall-of-rome');
 assert.deepEqual(extractJson('```json\n{"a":1}\n```'), { a: 1 });

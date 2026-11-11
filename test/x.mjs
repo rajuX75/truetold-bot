@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 
 process.env.X_RETRY_BASE_MS = '1';
 process.env.X_MAX_WAIT_MS = '3000';
+delete process.env.X_LINK_MODE;
+delete process.env.X_ATTACH_IMAGE;
 Object.assign(process.env, { X_API_KEY: 'ck', X_API_SECRET: 'cs', X_ACCESS_TOKEN: 'at', X_ACCESS_SECRET: 'as' });
 
 let behavior = () => ({});
@@ -43,7 +45,7 @@ assert.equal(decodeURIComponent(h.match(/oauth_signature="([^"]+)"/)[1]), 'hCtSm
 assert.equal(weightedLength('https://example.com/some/very/long/path/that/is/not/23/chars'), 23);
 assert.equal(weightedLength('→'), 2);
 for (const hook of ['x'.repeat(400), 'é'.repeat(400), '日本語'.repeat(120), '🔥'.repeat(150)]) {
-  const t = buildTweet({ hook, url: 'https://example.blogspot.com/2026/11/a.html', hashtags: ['#TrueStory', '#History'] });
+  const t = buildTweet({ hook, url: 'https://example.blogspot.com/2026/11/a.html', hashtags: ['#TrueStory', '#History'], linkMode: 'inline' });
   assert.ok(weightedLength(t) <= 280, `too long: ${weightedLength(t)}`);
   assert.match(t, /→ Continue Reading\nhttps:\/\/example\.blogspot\.com\/2026\/11\/a\.html\n#TrueStory #History$/);
 }

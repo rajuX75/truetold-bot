@@ -35,6 +35,8 @@ const llm = await import('../src/llm.mjs');
 async function fresh(extra = {}) {
   llm.resetLLM(); calls = []; behavior = () => ({});
   for (const k of Object.keys(process.env)) if (/^LLM_(API_KEY|BASE_URL|MODEL|VISION_MODEL|CHECK_MODEL|PROVIDER_NAME)/.test(k)) delete process.env[k];
+  delete process.env.FACTCHECK_STRICT;
+  delete process.env.MAX_CANDIDATES;
   Object.assign(process.env, {
     LLM_API_KEY: 'k1', LLM_BASE_URL: `http://127.0.0.1:${port}/v1`, LLM_MODEL: 'm-a,m-b,m-c',
     LLM_API_KEY_2: 'k2', LLM_BASE_URL_2: `http://127.0.0.1:${port}/p2`, LLM_MODEL_2: 'p2-a',
@@ -127,6 +129,7 @@ assert.equal(v.category, 'History'); assert.ok(v.tweetHook && v.description && A
 assert.throws(() => validateStory({ ...story, sections: [story.sections[0]] }, ['History']), /2 sections/);
 assert.throws(() => validateStory({ ...story, sections: story.sections.map((s) => ({ ...s, paragraphs: ['short'] })) }, ['History']), /too short/);
 
+delete process.env.FACTCHECK_STRICT;
 const article = { text: 'source' };
 behavior = () => ({ content: JSON.stringify({ pass: false, issues: [{ claim: 'tone', severity: 'minor', why: 'paraphrase' }] }) });
 assert.equal((await factCheck({ article, story: v })).pass, true, 'minor-only findings do not fail the story');
