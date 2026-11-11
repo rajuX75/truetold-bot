@@ -6,7 +6,8 @@ import { writeStory, factCheck, vetImage } from './write.mjs';
 import { processImage, previewJpeg } from './images.mjs';
 import { renderPost } from './render.mjs';
 import { insertPost } from './blogger.mjs';
-import { buildTweet, postToX } from './x.mjs';
+import { buildTweet, postToX, xConfigured, explainXError, XError } from './x.mjs';
+import { LLMExhaustedError, llmStats } from './llm.mjs';
 
 const cfg = JSON.parse(await fs.readFile('config.json', 'utf8'));
 const DRY = process.env.DRY_RUN === 'true';
@@ -18,14 +19,14 @@ const IMAGE_BASE =
   (process.env.IMAGE_BASE_URL || `https://${owner}.github.io${repo.toLowerCase() === `${owner.toLowerCase()}.github.io` ? '' : `/${repo}`}`).replace(/\/$/, '') + '/img';
 
 const state = JSON.parse(await fs.readFile(STATE_FILE, 'utf8').catch(() => '{"stories":[],"days":{}}'));
+state.xQueue ||= []; // tweets that could not be sent yet (no credits, rate limit, outage) — retried every run
+const MAX_CANDIDATES = Number(process.env.MAX_CANDIDATES || 4);
+const X_QUEUE_MAX_AGE_MS = 72 * 3600 * 1000;
 const now = new Date();
 const today = now.toISOString().slice(0, 10);
 const doneToday = state.days[today] || 0;
 
-if (!process.env.FORCE && doneToday >= cfg.storiesPerDay) {
-  log(`Daily cap reached (${doneToday}/${cfg.storiesPerDay}). Nothing to do.`);
-  process.exit(0);
-}
+const capReached = !process.env.FORCE && doneToday >= cfg.storiesPerDay;
 
 function git(...a) { return execFileSync('git', a, { stdio: 'inherit' }); }
 function commitPush(message) {
@@ -47,6 +48,49 @@ async function waitForUrl(url, tries = 40) {
     await sleep(10000);
   }
   return false;
+}
+
+
+const gh = (level, title, msg) => console.log(`::${level} title=${title}::${String(msg).replace(/\r?\n/g, ' ')}`);
+let xBlocked = null; // set when X rejects us for an account-level reason; stops hammering the API this run
+
+/** Try to tweet one item. Returns 'sent' | 'drop' | 'queue'. Never throws. */
+async function tweetItem(item) {
+  if (!xConfigured()) { log('X: skipped - credentials not configured'); return 'drop'; }
+  if (xBlocked) return 'queue';
+  try {
+    const tweet = buildTweet({ hook: item.hook, url: item.url, hashtags: cfg.xHashtags });
+    const imageBuffer = item.ogFile ? await fs.readFile(item.ogFile).catch(() => undefined) : undefined;
+    const r = await postToX(tweet, { imageBuffer });
+    if (r.skipped) { log('X: skipped -', r.reason); return 'drop'; }
+    log(`X: posted ${r.id}${r.withImage ? ` (with image via ${r.mediaVia})` : ' (text-only)'}`);
+    item.xId = r.id;
+    return 'sent';
+  } catch (e) {
+    item.attempts = (item.attempts || 0) + 1;
+    item.lastError = String(e.message).slice(0, 200);
+    if (e instanceof XError) {
+      if (e.kind === 'duplicate') { log('X: already posted (duplicate rejected by X) - marking done'); return 'sent'; }
+      if (e.kind === 'invalid') { log(`X: post rejected permanently (${e.message}) - dropping`); return 'drop'; }
+      if (e.blocking) { xBlocked = e; gh('warning', 'X posting blocked', `${e.message} :: ${explainXError(e)}`); log('X BLOCKED:', e.message, '\n   ->', explainXError(e)); }
+      else log(`X: ${e.kind} - will retry next run (${e.message})`);
+    } else log(`X: unexpected error - will retry next run (${e.message})`);
+    return 'queue';
+  }
+}
+
+async function flushXQueue() {
+  if (DRY || DRAFT || !state.xQueue.length) return;
+  log(`X queue: ${state.xQueue.length} pending tweet(s)`);
+  const keep = [];
+  for (const item of state.xQueue) {
+    if (Date.now() - Date.parse(item.queuedAt) > X_QUEUE_MAX_AGE_MS || (item.attempts || 0) >= 8) { log('X queue: dropping stale item', item.url); continue; }
+    const r = await tweetItem(item);
+    if (r === 'queue') keep.push(item);
+  }
+  state.xQueue = keep;
+  await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2));
+  commitPush('state: x queue');
 }
 
 async function buildOne(candidate) {
@@ -88,11 +132,19 @@ async function buildOne(candidate) {
 }
 
 let made = 0;
+let tried = 0;
+await flushXQueue();
+if (capReached) {
+  log(`Daily cap reached (${doneToday}/${cfg.storiesPerDay}). Nothing more to publish.`);
+  process.exit(0);
+}
 const candidates = await getCandidates(now, state.stories.map((s) => s.page));
 log(`${candidates.length} candidate stories for today`);
 
 for (const cand of candidates) {
   if (made >= cfg.storiesPerRun) break;
+  if (tried >= MAX_CANDIDATES) { log(`Reached MAX_CANDIDATES (${MAX_CANDIDATES}) - stopping to protect API quota.`); break; }
+  tried++;
   try {
     log('Building:', cand.title);
     const { story, img, html, article } = await buildOne(cand);
@@ -119,26 +171,23 @@ for (const cand of candidates) {
     made++;
 
     if (!DRAFT) {
-      try {
-        const tweet = buildTweet({ hook: story.tweetHook, url: post.url, hashtags: cfg.xHashtags });
-        // Load the OG image (1200x630 JPEG) that was already committed to Pages
-        let ogBuffer;
-        try {
-          const ogPath = img.files.find((f) => f.includes('-og-'));
-          if (ogPath) ogBuffer = await fs.readFile(ogPath);
-        } catch { /* non-fatal - post without image if file missing */ }
-        const r = await postToX(tweet, { imageBuffer: ogBuffer });
-        if (r.skipped) {
-          log('X: skipped -', r.reason);
-        } else {
-          log(`X: posted tweet ${r.id}${r.withImage ? ' (with OG image)' : ' (text-only, image upload failed)'}`);
-        }
-      } catch (e) { log('X post failed (non-fatal):', e.message); }
+      const ogFile = img.files.find((f) => f.includes('-og-'));
+      const item = { title: story.title, url: post.url, hook: story.tweetHook, ogFile, queuedAt: new Date().toISOString(), attempts: 0 };
+      const r = await tweetItem(item);
+      const rec = state.stories[state.stories.length - 1];
+      if (r === 'sent') rec.xId = item.xId;
+      else if (r === 'queue') { state.xQueue.push(item); log('X: tweet queued for the next run'); }
     }
     await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2));
     commitPush(`state: ${today} ${state.days[today]}/${cfg.storiesPerDay}`);
   } catch (e) {
     log(`Skipped "${cand.title}":`, e.message);
+    if (e instanceof LLMExhaustedError) {
+      gh('error', 'All AI models unavailable', e.message);
+      log('All LLM models are exhausted/cooling down - other candidates would fail the same way, stopping this run.');
+      break;
+    }
   }
 }
+for (const s of llmStats()) log('LLM', s.model, s.note || `calls=${s.calls} ok=${s.ok} badOutput=${s.bad}`);
 if (!made) { log('No story could be published this run.'); process.exitCode = 1; }

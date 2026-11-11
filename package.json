@@ -1,6 +1,6 @@
 {
   "name": "truetold-autopublisher",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,11 +8,12 @@
   },
   "scripts": {
     "start": "node src/run.mjs",
-    "test": "node test/offline.mjs && node test/llm.mjs",
-    "blogger-token": "node scripts/get-blogger-token.mjs"
+    "test": "node test/offline.mjs && node test/llm.mjs && node test/x.mjs",
+    "blogger-token": "node scripts/get-blogger-token.mjs",
+    "llm-check": "node scripts/llm-check.mjs",
+    "x-check": "node scripts/x-check.mjs"
   },
   "dependencies": {
-    "sharp": "^0.35.5",
-    "twitter-api-v2": "^1.31.0"
+    "sharp": "^0.35.5"
   }
 }

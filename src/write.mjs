@@ -1,10 +1,8 @@
 // Grounded writing + independent fact-check + image vetting with any OpenAI-compatible model.
-import { extractJson, log } from './util.mjs';
-import { chat, MODELS } from './llm.mjs';
-
-async function ask({ system, content, max = 1800, temperature = 0.4, model = MODELS.text() }) {
-  return chat({ model, system, user: content, max, temperature });
-}
+// Every call goes through chatJson(): schema validation is part of the request, so malformed or
+// truncated output fails over to another model automatically (see llm.mjs).
+import { log } from './util.mjs';
+import { chatJson, hasRole } from './llm.mjs';
 
 const WRITER_SYSTEM = `You are a master narrative journalist who writes short, gripping, TRUE stories for a popular history blog. You have the pacing of a thriller writer and the discipline of a fact-checker.
 
@@ -41,6 +39,30 @@ Schema (return exactly this shape):
 }
 Length: 600-850 words across 3-4 sections. Each section must have at least 2 paragraphs.`;
 
+const wordCount = (j) => j.sections.flatMap((s) => s.paragraphs).join(' ').split(/\s+/).filter(Boolean).length;
+
+/** Throws if the story is unusable (→ llm.mjs tries another model); normalises optional fields. */
+export function validateStory(j, categories) {
+  if (!j || typeof j !== 'object') throw new Error('not an object');
+  if (typeof j.title !== 'string' || !j.title.trim()) throw new Error('missing title');
+  if (!Array.isArray(j.sections) || j.sections.length < 2) throw new Error('needs at least 2 sections');
+  for (const s of j.sections) {
+    if (!s || typeof s.heading !== 'string' || !s.heading.trim()) throw new Error('section without heading');
+    if (!Array.isArray(s.paragraphs) || !s.paragraphs.length || s.paragraphs.some((p) => typeof p !== 'string' || !p.trim())) throw new Error('section without paragraphs');
+  }
+  if (!Array.isArray(j.takeaways) || !j.takeaways.length || j.takeaways.some((t) => typeof t !== 'string')) throw new Error('missing takeaways');
+  const words = wordCount(j);
+  if (words < 350) throw new Error(`story too short (${words} words) — likely truncated`);
+
+  j.title = j.title.trim();
+  j.tags = Array.isArray(j.tags) ? j.tags.filter((t) => typeof t === 'string' && t.trim()).slice(0, 3) : [];
+  if (!categories.includes(j.category)) j.category = categories[0];
+  j.description = String(j.description || j.takeaways[0]).trim().slice(0, 160);
+  j.tweetHook = String(j.tweetHook || j.takeaways[0]).trim().slice(0, 180);
+  if (typeof j.slug !== 'string' || !j.slug.trim()) j.slug = '';
+  return j;
+}
+
 export async function writeStory({ article, candidate, categories, today, feedback }) {
   const prompt =
     `Allowed categories: ${categories.join(', ')}\nToday: ${today}\n` +
@@ -48,74 +70,71 @@ export async function writeStory({ article, candidate, categories, today, feedba
     `SOURCE TEXT (the only permitted source of facts):\n"""\n${article.text}\n"""` +
     (feedback ? `\n\nA fact-checker rejected the previous draft for these unsupported claims. Fix them by removing or correcting:\n${feedback}` : '');
 
-  // Try up to 2 times; some models occasionally return prose instead of JSON,
-  // or produce JSON with syntax errors. Second attempt uses lower temperature.
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const out = await ask({ system: WRITER_SYSTEM, content: prompt, max: 1800, temperature: attempt === 0 ? 0.4 : 0.15 });
-    let j;
-    try {
-      j = extractJson(out);
-    } catch (e) {
-      log(`Writer JSON error (attempt ${attempt + 1}): ${e.message}`);
-      if (attempt === 0) continue;
-      throw new Error(`Writer returned invalid JSON after 2 attempts: ${e.message}`);
-    }
-    if (!j.title || !Array.isArray(j.sections) || j.sections.length < 2) {
-      log(`Writer malformed JSON (attempt ${attempt + 1}): title="${j.title}", sections=${j.sections?.length}`);
-      if (attempt === 0) continue;
-      throw new Error('Malformed story JSON after 2 attempts');
-    }
-    if (!categories.includes(j.category)) j.category = categories[0];
-    return j;
-  }
+  return chatJson({
+    role: 'text', system: WRITER_SYSTEM, user: prompt,
+    max: 6000, temperature: feedback ? 0.2 : 0.4,
+    validate: (j) => validateStory(j, categories),
+  });
 }
 
+const STRICT = () => String(process.env.FACTCHECK_STRICT || '').toLowerCase() === 'true';
+
 const CHECK_SYSTEM = `You are a strict fact-checker. Compare the ARTICLE with the SOURCE TEXT.
-List every factual claim in the article (dates, numbers, names, places, causes, quotes, sequence of events) that is NOT directly supported by the source text or that contradicts it. Ignore style and pure connective prose.
-Return ONLY JSON: {"pass": boolean, "issues": ["short description of each unsupported claim"]}
-pass=true only if there are zero unsupported or contradicted claims.`;
+List every factual claim in the article that is NOT directly supported by the source text or that contradicts it.
+Classify each issue:
+- "major": a date, number, name, place, quote, outcome, sequence of events or causal claim that is absent from the source or contradicts it.
+- "minor": wording, emphasis or reasonable paraphrase that adds no new verifiable fact. Pure style and connective prose are NOT issues.
+Return ONLY JSON: {"pass": boolean, "issues": [{"claim": "short quote or description", "severity": "major" | "minor", "why": "short reason"}]}
+pass=true only if there are zero major issues.`;
 
 export async function factCheck({ article, story }) {
   const body = story.sections.map((s) => `## ${s.heading}\n${s.paragraphs.join('\n')}`).join('\n\n');
-  const out = await ask({
-    system: CHECK_SYSTEM,
-    content: `SOURCE TEXT:\n"""\n${article.text}\n"""\n\nARTICLE:\n"""\n${story.title}\n${story.takeaways.join('\n')}\n${body}\n"""`,
-    max: 600,
-    temperature: 0,
-    model: MODELS.check(),
+  const j = await chatJson({
+    role: 'check', system: CHECK_SYSTEM, max: 3000, temperature: 0,
+    user: `SOURCE TEXT:\n"""\n${article.text}\n"""\n\nARTICLE:\n"""\n${story.title}\n${story.takeaways.join('\n')}\n${body}\n"""`,
+    validate: (r) => {
+      if (!r || typeof r !== 'object') throw new Error('not an object');
+      if (typeof r.pass !== 'boolean' && !Array.isArray(r.issues)) throw new Error('missing pass/issues');
+    },
   });
-  const j = extractJson(out);
-  return { pass: j.pass === true, issues: j.issues || [] };
+  const issues = (Array.isArray(j.issues) ? j.issues : []).map((i) =>
+    typeof i === 'string' ? { claim: i, severity: 'major', why: '' } : { claim: String(i?.claim || ''), severity: i?.severity === 'minor' ? 'minor' : 'major', why: String(i?.why || '') });
+  const blocking = STRICT() ? issues : issues.filter((i) => i.severity === 'major');
+  const unspecified = j.pass === false && issues.length === 0; // model said "fail" but gave nothing actionable
+  const fmt = (i) => (i.why ? `${i.claim} — ${i.why}` : i.claim);
+  if (issues.length && !blocking.length) log(`Fact-check: ${issues.length} minor wording note(s) ignored`);
+  return {
+    pass: blocking.length === 0 && !unspecified,
+    issues: unspecified ? ['Checker flagged the article without naming a claim'] : blocking.map(fmt),
+  };
 }
 
 // Vision check: does the picture plausibly relate to the story? Also writes accessible alt text + caption.
-// If the provider doesn't support image inputs (e.g. text-only models), it gracefully falls back to metadata evaluation.
+// If no vision-capable model is available, it falls back to evaluating the file metadata only.
 export async function vetImage({ title, summary, fileTitle, fileDescription, jpegBuffer }) {
   const systemPrompt =
     'You review a candidate hero image for a factual article. Describe ONLY what is visibly in the image; never assert identities, places or dates that you cannot see unless the provided file description states them. Return ONLY JSON: {"ok": boolean, "alt": "concise descriptive alt text, 80-125 chars, no \\"image of\\"", "caption": "one factual sentence <= 140 chars based on the file description", "reason": "short"}. ok=false if the image is a logo, map, text-heavy graphic, unrelated, low quality, or graphic gore.';
   const textPrompt = `Article title: ${title}\nArticle summary: ${summary}\nFile name: ${fileTitle}\nFile description (from Wikimedia Commons): ${fileDescription || 'n/a'}`;
+  const validate = (j) => {
+    if (!j || typeof j.ok !== 'boolean') throw new Error('missing ok');
+    if (j.ok && (typeof j.alt !== 'string' || typeof j.caption !== 'string' || !j.alt.trim())) throw new Error('missing alt/caption');
+  };
 
-  try {
-    const out = await ask({
-      system: systemPrompt,
-      model: MODELS.vision(),
-      content: [
-        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${jpegBuffer.toString('base64')}` } },
-        { type: 'text', text: textPrompt },
-      ],
-      max: 350,
-      temperature: 0,
-    });
-    return extractJson(out);
-  } catch (err) {
-    log(`Vision API unavailable or failed (${err.message.slice(0, 100)}), falling back to metadata vetting`);
-    const out = await ask({
-      system: systemPrompt,
-      model: MODELS.text(),
-      content: `${textPrompt}\n(Note: Image preview is not viewable by your endpoint. Review the file name and description to determine if it is a relevant photographic or historical hero image).`,
-      max: 350,
-      temperature: 0,
-    });
-    return extractJson(out);
+  if (await hasRole('vision')) {
+    try {
+      return await chatJson({
+        role: 'vision', system: systemPrompt, max: 1500, temperature: 0, validate,
+        user: [
+          { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${jpegBuffer.toString('base64')}` } },
+          { type: 'text', text: textPrompt },
+        ],
+      });
+    } catch (err) {
+      log(`Vision check unavailable (${String(err.message).slice(0, 100)}), falling back to metadata vetting`);
+    }
   }
+  return chatJson({
+    role: 'text', system: systemPrompt, max: 1500, temperature: 0, validate,
+    user: `${textPrompt}\n(Note: the image itself is not viewable. Judge from the file name and description whether it is a relevant photographic or historical hero image.)`,
+  });
 }

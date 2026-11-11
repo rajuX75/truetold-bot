@@ -13,6 +13,10 @@ on:
   # ── Manual trigger with optional flags
   workflow_dispatch:
     inputs:
+      diagnose:
+        description: 'Diagnose only: test every AI model + the X credentials, publish nothing'
+        type: boolean
+        default: false
       dry_run:
         description: 'Generate only (no commit, no Blogger, no X)'
         type: boolean
@@ -34,6 +38,60 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      DRY_RUN:              ${{ inputs.dry_run  || 'false' }}
+      PUBLISH_AS_DRAFT:     ${{ inputs.draft    || 'false' }}
+      CONTACT_EMAIL:        ${{ secrets.CONTACT_EMAIL || vars.CONTACT_EMAIL }}
+      IMAGE_BASE_URL:       ${{ secrets.IMAGE_BASE_URL || vars.IMAGE_BASE_URL }}
+
+      # ── AI providers, tried in order. Each can list several models: LLM_MODEL="model-a,model-b".
+      #    Leave LLM_MODEL* EMPTY to use the built-in, up-to-date defaults (recommended).
+      # Provider 1 (primary): Gemini
+      LLM_API_KEY:          ${{ secrets.LLM_API_KEY }}
+      LLM_BASE_URL:         ${{ secrets.LLM_BASE_URL || vars.LLM_BASE_URL }}
+      LLM_MODEL:            ${{ secrets.LLM_MODEL || vars.LLM_MODEL }}
+      LLM_VISION_MODEL:     ${{ secrets.LLM_VISION_MODEL || vars.LLM_VISION_MODEL }}
+      LLM_CHECK_MODEL:      ${{ secrets.LLM_CHECK_MODEL || vars.LLM_CHECK_MODEL }}
+      LLM_PROVIDER_NAME:    ${{ secrets.LLM_PROVIDER_NAME || vars.LLM_PROVIDER_NAME }}
+      # Provider 2 (fallback): Groq
+      LLM_API_KEY_2:        ${{ secrets.LLM_API_KEY_2 }}
+      LLM_BASE_URL_2:       ${{ secrets.LLM_BASE_URL_2 || vars.LLM_BASE_URL_2 }}
+      LLM_MODEL_2:          ${{ secrets.LLM_MODEL_2 || vars.LLM_MODEL_2 }}
+      LLM_VISION_MODEL_2:   ${{ secrets.LLM_VISION_MODEL_2 || vars.LLM_VISION_MODEL_2 }}
+      LLM_CHECK_MODEL_2:    ${{ secrets.LLM_CHECK_MODEL_2 || vars.LLM_CHECK_MODEL_2 }}
+      LLM_PROVIDER_NAME_2:  ${{ secrets.LLM_PROVIDER_NAME_2 || vars.LLM_PROVIDER_NAME_2 }}
+      # Provider 3 (fallback): Cerebras
+      LLM_API_KEY_3:        ${{ secrets.LLM_API_KEY_3 }}
+      LLM_BASE_URL_3:       ${{ secrets.LLM_BASE_URL_3 || vars.LLM_BASE_URL_3 }}
+      LLM_MODEL_3:          ${{ secrets.LLM_MODEL_3 || vars.LLM_MODEL_3 }}
+      LLM_VISION_MODEL_3:   ${{ secrets.LLM_VISION_MODEL_3 || vars.LLM_VISION_MODEL_3 }}
+      LLM_CHECK_MODEL_3:    ${{ secrets.LLM_CHECK_MODEL_3 || vars.LLM_CHECK_MODEL_3 }}
+      LLM_PROVIDER_NAME_3:  ${{ secrets.LLM_PROVIDER_NAME_3 || vars.LLM_PROVIDER_NAME_3 }}
+      # Provider 4 (optional): OpenRouter — needs LLM_MODEL_4, e.g. a model id ending in :free
+      LLM_API_KEY_4:        ${{ secrets.LLM_API_KEY_4 }}
+      LLM_BASE_URL_4:       ${{ secrets.LLM_BASE_URL_4 || vars.LLM_BASE_URL_4 }}
+      LLM_MODEL_4:          ${{ secrets.LLM_MODEL_4 || vars.LLM_MODEL_4 }}
+      LLM_VISION_MODEL_4:   ${{ secrets.LLM_VISION_MODEL_4 || vars.LLM_VISION_MODEL_4 }}
+      LLM_CHECK_MODEL_4:    ${{ secrets.LLM_CHECK_MODEL_4 || vars.LLM_CHECK_MODEL_4 }}
+      LLM_PROVIDER_NAME_4:  ${{ secrets.LLM_PROVIDER_NAME_4 || vars.LLM_PROVIDER_NAME_4 }}
+      # Optional tuning
+      FACTCHECK_STRICT:     ${{ vars.FACTCHECK_STRICT }}
+      MAX_CANDIDATES:       ${{ vars.MAX_CANDIDATES }}
+
+      # ── Blogger
+      BLOGGER_BLOG_ID:       ${{ secrets.BLOGGER_BLOG_ID }}
+      BLOGGER_CLIENT_ID:     ${{ secrets.BLOGGER_CLIENT_ID }}
+      BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+      BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+
+      # ── X (Twitter) — pay-per-use API; posts with a link cost ~$0.20 each
+      X_API_KEY:            ${{ secrets.X_API_KEY }}
+      X_API_SECRET:         ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN:       ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_SECRET:      ${{ secrets.X_ACCESS_SECRET }}
+      X_LINK_MODE:          ${{ vars.X_LINK_MODE }}      # inline (default) | none
+      X_ATTACH_IMAGE:       ${{ vars.X_ATTACH_IMAGE }}   # set to false to skip image upload
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,46 +106,12 @@ jobs:
 
       - run: npm test
 
+      - name: Diagnose AI models and X credentials
+        if: ${{ inputs.diagnose }}
+        run: |
+          node scripts/llm-check.mjs
+          node scripts/x-check.mjs
+
       - name: Generate, publish, share
+        if: ${{ !inputs.diagnose }}
         run: node src/run.mjs
-        env:
-          DRY_RUN:              ${{ inputs.dry_run  || 'false' }}
-          PUBLISH_AS_DRAFT:     ${{ inputs.draft    || 'false' }}
-          CONTACT_EMAIL:        ${{ secrets.CONTACT_EMAIL || vars.CONTACT_EMAIL }}
-          IMAGE_BASE_URL:       ${{ secrets.IMAGE_BASE_URL || vars.IMAGE_BASE_URL }}
-
-          # ── Provider 1 (primary): Gemini
-          LLM_API_KEY:          ${{ secrets.LLM_API_KEY }}
-          LLM_BASE_URL:         ${{ secrets.LLM_BASE_URL || vars.LLM_BASE_URL }}
-          LLM_MODEL:            ${{ secrets.LLM_MODEL || vars.LLM_MODEL }}
-          LLM_VISION_MODEL:     ${{ secrets.LLM_VISION_MODEL || vars.LLM_VISION_MODEL }}
-          LLM_CHECK_MODEL:      ${{ secrets.LLM_CHECK_MODEL || vars.LLM_CHECK_MODEL }}
-          LLM_PROVIDER_NAME:    ${{ secrets.LLM_PROVIDER_NAME || vars.LLM_PROVIDER_NAME }}
-
-          # ── Provider 2 (fallback): e.g. Groq
-          LLM_API_KEY_2:        ${{ secrets.LLM_API_KEY_2 }}
-          LLM_BASE_URL_2:       ${{ secrets.LLM_BASE_URL_2 || vars.LLM_BASE_URL_2 }}
-          LLM_MODEL_2:          ${{ secrets.LLM_MODEL_2 || vars.LLM_MODEL_2 }}
-          LLM_VISION_MODEL_2:   ${{ secrets.LLM_VISION_MODEL_2 || vars.LLM_VISION_MODEL_2 }}
-          LLM_CHECK_MODEL_2:    ${{ secrets.LLM_CHECK_MODEL_2 || vars.LLM_CHECK_MODEL_2 }}
-          LLM_PROVIDER_NAME_2:  ${{ secrets.LLM_PROVIDER_NAME_2 || vars.LLM_PROVIDER_NAME_2 }}
-
-          # ── Provider 3 (fallback): e.g. Cerebras
-          LLM_API_KEY_3:        ${{ secrets.LLM_API_KEY_3 }}
-          LLM_BASE_URL_3:       ${{ secrets.LLM_BASE_URL_3 || vars.LLM_BASE_URL_3 }}
-          LLM_MODEL_3:          ${{ secrets.LLM_MODEL_3 || vars.LLM_MODEL_3 }}
-          LLM_VISION_MODEL_3:   ${{ secrets.LLM_VISION_MODEL_3 || vars.LLM_VISION_MODEL_3 }}
-          LLM_CHECK_MODEL_3:    ${{ secrets.LLM_CHECK_MODEL_3 || vars.LLM_CHECK_MODEL_3 }}
-          LLM_PROVIDER_NAME_3:  ${{ secrets.LLM_PROVIDER_NAME_3 || vars.LLM_PROVIDER_NAME_3 }}
-
-          # ── Blogger
-          BLOGGER_BLOG_ID:      ${{ secrets.BLOGGER_BLOG_ID }}
-          BLOGGER_CLIENT_ID:    ${{ secrets.BLOGGER_CLIENT_ID }}
-          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
-          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
-
-          # ── X (Twitter)
-          X_API_KEY:            ${{ secrets.X_API_KEY }}
-          X_API_SECRET:         ${{ secrets.X_API_SECRET }}
-          X_ACCESS_TOKEN:       ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_SECRET:      ${{ secrets.X_ACCESS_SECRET }}
