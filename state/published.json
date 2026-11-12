@@ -41,11 +41,18 @@
       "title": "The Rise of the People's Liberation Army Air Force",
       "url": "https://dramaxvault.blogspot.com/2026/11/the-rise-of-peoples-liberation-army-air.html",
       "date": "2026-11-11"
+    },
+    {
+      "page": "Wilberforce_Monument",
+      "title": "A Tower for the Abolitionist: The Wilberforce Monument",
+      "url": "https://dramaxvault.blogspot.com/2026/11/a-tower-for-abolitionist-wilberforce.html",
+      "date": "2026-11-12"
     }
   ],
   "days": {
     "2026-11-09": 3,
-    "2026-11-11": 4
+    "2026-11-11": 4,
+    "2026-11-12": 1
   },
   "xQueue": [
     {
@@ -79,6 +86,14 @@
       "hook": "The People's Liberation Army Air Force began with just nine cadets in 1924 and a fleet of captured American planes; today it operates the world's second-largest stealth fleet.",
       "ogFile": "docs/img/2026/11/founding-of-the-plaaf-chinese-airpower-og-1200x630.jpg",
       "queuedAt": "2026-11-11T21:31:23.415Z",
+      "attempts": 0
+    },
+    {
+      "title": "A Tower for the Abolitionist: The Wilberforce Monument",
+      "url": "https://dramaxvault.blogspot.com/2026/11/a-tower-for-abolitionist-wilberforce.html",
+      "hook": "The cornerstone for the 110-foot Wilberforce Monument was laid on August 1, 1834—the exact day the Slavery Abolition Act went into effect in the British Empire.",
+      "ogFile": "docs/img/2026/11/abolitionist-monument-william-wilberforce-hull-og-1200x630.jpg",
+      "queuedAt": "2026-11-12T09:51:20.608Z",
       "attempts": 0
     }
   ]
