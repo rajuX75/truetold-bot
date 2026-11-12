@@ -47,12 +47,18 @@
       "title": "A Tower for the Abolitionist: The Wilberforce Monument",
       "url": "https://dramaxvault.blogspot.com/2026/11/a-tower-for-abolitionist-wilberforce.html",
       "date": "2026-11-12"
+    },
+    {
+      "page": "Ketch",
+      "title": "Defining the Ketch: The Evolution of a Multi-Masted Rig",
+      "url": "https://dramaxvault.blogspot.com/2026/11/defining-ketch-evolution-of-multi.html",
+      "date": "2026-11-12"
     }
   ],
   "days": {
     "2026-11-09": 3,
     "2026-11-11": 4,
-    "2026-11-12": 1
+    "2026-11-12": 2
   },
   "xQueue": [
     {
@@ -94,6 +100,14 @@
       "hook": "The cornerstone for the 110-foot Wilberforce Monument was laid on August 1, 1834—the exact day the Slavery Abolition Act went into effect in the British Empire.",
       "ogFile": "docs/img/2026/11/abolitionist-monument-william-wilberforce-hull-og-1200x630.jpg",
       "queuedAt": "2026-11-12T09:51:20.608Z",
+      "attempts": 0
+    },
+    {
+      "title": "Defining the Ketch: The Evolution of a Multi-Masted Rig",
+      "url": "https://dramaxvault.blogspot.com/2026/11/defining-ketch-evolution-of-multi.html",
+      "hook": "The placement of a single mast forward of the rudder post is the only thing that separates a ketch from a yawl.",
+      "ogFile": "docs/img/2026/11/evolution-of-the-ketch-rig-og-1200x630.jpg",
+      "queuedAt": "2026-11-12T21:34:31.102Z",
       "attempts": 0
     }
   ]
