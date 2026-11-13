@@ -59,13 +59,19 @@
       "title": "The St. Brice's Day Massacre and the Fate of Æthelred",
       "url": "https://dramaxvault.blogspot.com/2026/11/the-st-brices-day-massacre-and-fate-of.html",
       "date": "2026-11-13"
+    },
+    {
+      "page": "High_Court_of_Australia",
+      "title": "Justice in Australia: The Rise of the High Court",
+      "url": "https://dramaxvault.blogspot.com/2026/11/justice-in-australia-rise-of-high-court.html",
+      "date": "2026-11-13"
     }
   ],
   "days": {
     "2026-11-09": 3,
     "2026-11-11": 4,
     "2026-11-12": 2,
-    "2026-11-13": 1
+    "2026-11-13": 2
   },
   "xQueue": [
     {
@@ -123,6 +129,14 @@
       "hook": "In 1002, King Æthelred II ordered the massacre of all Danes in England, a desperate act of paranoia that failed to stop the Viking conquest of his kingdom.",
       "ogFile": "docs/img/2026/11/st-brices-day-massacre-aethelred-unready-og-1200x630.jpg",
       "queuedAt": "2026-11-13T09:35:58.580Z",
+      "attempts": 0
+    },
+    {
+      "title": "Justice in Australia: The Rise of the High Court",
+      "url": "https://dramaxvault.blogspot.com/2026/11/justice-in-australia-rise-of-high-court.html",
+      "hook": "For decades, Australia's highest court battled for supremacy against British judges in London until the Australia Acts of 1986 finally secured its total independence.",
+      "ogFile": "docs/img/2026/11/high-court-australia-independence-og-1200x630.jpg",
+      "queuedAt": "2026-11-13T20:56:15.712Z",
       "attempts": 0
     }
   ]
