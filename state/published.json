@@ -82,21 +82,13 @@
   },
   "xQueue": [
     {
-      "title": "Lion of Khotyn: The Frosty Siege of the Dniester",
-      "url": "https://dramaxvault.blogspot.com/2026/11/lion-of-khotyn-frosty-siege-of-dniester.html",
-      "hook": "Jan Sobieski forced his enemies to stay awake all night in freezing winds before leading a dawn charge that shattered an army of 35,000 at the Battle of Khotyn.",
-      "ogFile": "docs/img/2026/11/battle-of-khotyn-sobeski-victory-og-1200x630.jpg",
-      "queuedAt": "2026-11-11T09:23:59.218Z",
-      "attempts": 1,
-      "lastError": "X 402: credits depleted"
-    },
-    {
       "title": "The Rise of the People's Liberation Army Air Force",
       "url": "https://dramaxvault.blogspot.com/2026/11/the-rise-of-peoples-liberation-army-air.html",
       "hook": "The People's Liberation Army Air Force began with just nine cadets in 1924 and a fleet of captured American planes; today it operates the world's second-largest stealth fleet.",
       "ogFile": "docs/img/2026/11/founding-of-the-plaaf-chinese-airpower-og-1200x630.jpg",
       "queuedAt": "2026-11-11T21:31:23.415Z",
-      "attempts": 0
+      "attempts": 1,
+      "lastError": "X 402: credits depleted"
     },
     {
       "title": "A Tower for the Abolitionist: The Wilberforce Monument",
