@@ -71,6 +71,12 @@
       "title": "A Musical Revolution: The Birth of the UK Singles Chart",
       "url": "https://dramaxvault.blogspot.com/2026/11/a-musical-revolution-birth-of-uk.html",
       "date": "2026-11-14"
+    },
+    {
+      "page": "Joensuu_City_Hall",
+      "title": "Eliel Saarinen's Landmark: The Survival of Joensuu City Hall",
+      "url": "https://dramaxvault.blogspot.com/2026/11/eliel-saarinens-landmark-survival-of.html",
+      "date": "2026-11-14"
     }
   ],
   "days": {
@@ -78,7 +84,7 @@
     "2026-11-11": 4,
     "2026-11-12": 2,
     "2026-11-13": 2,
-    "2026-11-14": 1
+    "2026-11-14": 2
   },
   "xQueue": [
     {
@@ -128,6 +134,14 @@
       "hook": "The UK Singles Chart was born on November 14, 1952, after the NME was saved from closure with only 15 minutes to spare.",
       "ogFile": "docs/img/2026/11/nme-first-uk-singles-chart-og-1200x630.jpg",
       "queuedAt": "2026-11-14T08:58:23.385Z",
+      "attempts": 0
+    },
+    {
+      "title": "Eliel Saarinen's Landmark: The Survival of Joensuu City Hall",
+      "url": "https://dramaxvault.blogspot.com/2026/11/eliel-saarinens-landmark-survival-of.html",
+      "hook": "Designed by Eliel Saarinen in 1914, Joensuu City Hall houses the easternmost professional theater in the EU and narrowly survived a devastating 1966 fire that began on its stage.",
+      "ogFile": "docs/img/2026/11/joensuu-city-hall-saarinen-survival-og-1200x630.jpg",
+      "queuedAt": "2026-11-14T19:11:05.456Z",
       "attempts": 0
     }
   ]
