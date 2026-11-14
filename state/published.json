@@ -65,13 +65,20 @@
       "title": "Justice in Australia: The Rise of the High Court",
       "url": "https://dramaxvault.blogspot.com/2026/11/justice-in-australia-rise-of-high-court.html",
       "date": "2026-11-13"
+    },
+    {
+      "page": "NME",
+      "title": "A Musical Revolution: The Birth of the UK Singles Chart",
+      "url": "https://dramaxvault.blogspot.com/2026/11/a-musical-revolution-birth-of-uk.html",
+      "date": "2026-11-14"
     }
   ],
   "days": {
     "2026-11-09": 3,
     "2026-11-11": 4,
     "2026-11-12": 2,
-    "2026-11-13": 2
+    "2026-11-13": 2,
+    "2026-11-14": 1
   },
   "xQueue": [
     {
@@ -121,6 +128,14 @@
       "hook": "For decades, Australia's highest court battled for supremacy against British judges in London until the Australia Acts of 1986 finally secured its total independence.",
       "ogFile": "docs/img/2026/11/high-court-australia-independence-og-1200x630.jpg",
       "queuedAt": "2026-11-13T20:56:15.712Z",
+      "attempts": 0
+    },
+    {
+      "title": "A Musical Revolution: The Birth of the UK Singles Chart",
+      "url": "https://dramaxvault.blogspot.com/2026/11/a-musical-revolution-birth-of-uk.html",
+      "hook": "The UK Singles Chart was born on November 14, 1952, after the NME was saved from closure with only 15 minutes to spare.",
+      "ogFile": "docs/img/2026/11/nme-first-uk-singles-chart-og-1200x630.jpg",
+      "queuedAt": "2026-11-14T08:58:23.385Z",
       "attempts": 0
     }
   ]
