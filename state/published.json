@@ -83,6 +83,12 @@
       "title": "Inside the House of Commons: Power and Responsibility",
       "url": "https://dramaxvault.blogspot.com/2026/11/inside-house-of-commons-power-and.html",
       "date": "2026-11-14"
+    },
+    {
+      "page": "Boiler_explosion",
+      "title": "The Physics of Catastrophe: Why Early Boilers Exploded",
+      "url": "https://dramaxvault.blogspot.com/2026/11/the-physics-of-catastrophe-why-early.html",
+      "date": "2026-11-15"
     }
   ],
   "days": {
@@ -90,7 +96,8 @@
     "2026-11-11": 4,
     "2026-11-12": 2,
     "2026-11-13": 2,
-    "2026-11-14": 3
+    "2026-11-14": 3,
+    "2026-11-15": 1
   },
   "xQueue": [
     {
@@ -148,6 +155,14 @@
       "hook": "The UK government only stands as long as it has the confidence of the House of Commons—lose one vote, and the Prime Minister must resign or call an election.",
       "ogFile": "docs/img/2026/11/house-of-commons-legislative-power-and-scrutiny-og-1200x630.jpg",
       "queuedAt": "2026-11-14T23:55:37.653Z",
+      "attempts": 0
+    },
+    {
+      "title": "The Physics of Catastrophe: Why Early Boilers Exploded",
+      "url": "https://dramaxvault.blogspot.com/2026/11/the-physics-of-catastrophe-why-early.html",
+      "hook": "A large steam locomotive explosion releases the same theoretical energy as 2,600 pounds of TNT, enough force to peel back heavy steel plating like paper.",
+      "ogFile": "docs/img/2026/11/physics-of-early-boiler-explosions-og-1200x630.jpg",
+      "queuedAt": "2026-11-15T09:24:11.211Z",
       "attempts": 0
     }
   ]
