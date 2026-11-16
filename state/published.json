@@ -95,6 +95,12 @@
       "title": "Project Gemini: The Master Key to the Moon",
       "url": "https://dramaxvault.blogspot.com/2026/11/project-gemini-master-key-to-moon.html",
       "date": "2026-11-15"
+    },
+    {
+      "page": "American_Civil_War",
+      "title": "Inside Sherman's March and the Fall of the Confederacy",
+      "url": "https://dramaxvault.blogspot.com/2026/11/inside-shermans-march-and-fall-of.html",
+      "date": "2026-11-15"
     }
   ],
   "days": {
@@ -103,7 +109,7 @@
     "2026-11-12": 2,
     "2026-11-13": 2,
     "2026-11-14": 3,
-    "2026-11-15": 2
+    "2026-11-15": 3
   },
   "xQueue": [
     {
@@ -161,6 +167,14 @@
       "hook": "NASA's Gemini program proved humans could survive 14 days in orbit—long enough for a lunar trip—while using ejection seats that some feared would turn astronauts into Roman candles",
       "ogFile": "docs/img/2026/11/project-gemini-nasa-space-race-victory-og-1200x630.jpg",
       "queuedAt": "2026-11-15T19:48:14.446Z",
+      "attempts": 0
+    },
+    {
+      "title": "Inside Sherman's March and the Fall of the Confederacy",
+      "url": "https://dramaxvault.blogspot.com/2026/11/inside-shermans-march-and-fall-of.html",
+      "hook": "Union General William Tecumseh Sherman captured Atlanta in 1864 before executing his March to the Sea to take Savannah.",
+      "ogFile": "docs/img/2026/11/shermans-march-and-the-fall-of-the-confederacy-og-1200x630.jpg",
+      "queuedAt": "2026-11-16T00:00:25.947Z",
       "attempts": 0
     }
   ]
