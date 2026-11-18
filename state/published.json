@@ -113,29 +113,13 @@
   },
   "xQueue": [
     {
-      "title": "Inside the House of Commons: Power and Responsibility",
-      "url": "https://dramaxvault.blogspot.com/2026/11/inside-house-of-commons-power-and.html",
-      "hook": "The UK government only stands as long as it has the confidence of the House of Commons—lose one vote, and the Prime Minister must resign or call an election.",
-      "ogFile": "docs/img/2026/11/house-of-commons-legislative-power-and-scrutiny-og-1200x630.jpg",
-      "queuedAt": "2026-11-14T23:55:37.653Z",
-      "attempts": 1,
-      "lastError": "X 402: credits depleted"
-    },
-    {
-      "title": "The Physics of Catastrophe: Why Early Boilers Exploded",
-      "url": "https://dramaxvault.blogspot.com/2026/11/the-physics-of-catastrophe-why-early.html",
-      "hook": "A large steam locomotive explosion releases the same theoretical energy as 2,600 pounds of TNT, enough force to peel back heavy steel plating like paper.",
-      "ogFile": "docs/img/2026/11/physics-of-early-boiler-explosions-og-1200x630.jpg",
-      "queuedAt": "2026-11-15T09:24:11.211Z",
-      "attempts": 0
-    },
-    {
       "title": "Project Gemini: The Master Key to the Moon",
       "url": "https://dramaxvault.blogspot.com/2026/11/project-gemini-master-key-to-moon.html",
       "hook": "NASA's Gemini program proved humans could survive 14 days in orbit—long enough for a lunar trip—while using ejection seats that some feared would turn astronauts into Roman candles",
       "ogFile": "docs/img/2026/11/project-gemini-nasa-space-race-victory-og-1200x630.jpg",
       "queuedAt": "2026-11-15T19:48:14.446Z",
-      "attempts": 0
+      "attempts": 1,
+      "lastError": "X 402: credits depleted"
     },
     {
       "title": "Inside Sherman's March and the Fall of the Confederacy",
